@@ -1,14 +1,20 @@
 import mongoose from "mongoose";
 
 const documentSchema = new mongoose.Schema({
-  _id: String,
-  content: String,
+  _id:{
+    type:String,
+    required:true
+  }, 
+  content:{
+    type:String,
+    default:"",
+  },
   history: [
     {
-      type: { type: String, enum: ["insert", "delete"] },
-      index: Number,
-      text: String,
-      length: Number,
+      type: { type: String, enum: ["insert", "delete"], required:true },
+      index:{type: Number, required: true },
+      text: { type: String, default: "" },
+      length: { type: Number, required: function () { return this.type === "delete"; } }
     },
   ],
   lastUpdated: {

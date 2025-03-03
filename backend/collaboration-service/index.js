@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import collaborationRoutes from "./src/routes/collaborationRoutes.js";
 import Document from "./src/models/document.js";
+import { transformOperation } from "./src/utils/transformOperations.js"; // OT Transformation
 
 dotenv.config();
 const app = express();
@@ -20,13 +21,13 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection with error handling
+// MongoDB Connection with Error Handling
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => {
     console.error("DB Connection Error:", err);
-    process.exit(1); // Exit process if DB connection fails
+    process.exit(1);
   });
 
 app.use("/api/collaboration", collaborationRoutes);
@@ -42,7 +43,7 @@ collaborationNamespace.on("connection", (socket) => {
 
     let document = await Document.findById(documentId);
     if (!document) {
-      document = await Document.create({ _id: documentId, content: "" });
+      document = await Document.create({ _id: documentId, content: "", history: [] });
     }
 
     socket.emit("load-document", { content: document.content, version: document.lastUpdated });
@@ -53,38 +54,47 @@ collaborationNamespace.on("connection", (socket) => {
     let document = await Document.findById(documentId);
     if (!document) return;
 
-    if (new Date(version) !== new Date(document.lastUpdated)) {
+    // ✅ Version control check with timestamps
+    if (new Date(version).getTime() !== new Date(document.lastUpdated).getTime()) {
       socket.emit("error", "Version mismatch! Reload document.");
       return;
     }
 
-    if (operation.type === "delete") {
-      operation.text = document.content.slice(operation.index, operation.index + operation.length);
+    // ✅ If a previous operation exists, transform the new operation
+    if (document.history.length > 0) {
+      operation = transformOperation(document.history[document.history.length - 1], operation);
     }
 
-    const newContent = applyOperation(document.content, operation);
-    document.content = newContent;
+    // ✅ Store the operation in history
+    document.history.push(operation);
+    if (document.history.length > 100) document.history.shift(); // Limit stored history
+
+    // ✅ Apply the transformed operation
+    document.content = applyOperation(document.content, operation);
     document.lastUpdated = new Date();
     await document.save();
 
+    // ✅ Broadcast updated content
     collaborationNamespace.to(documentId).emit("document-updated", {
-      content: newContent,
+      content: document.content,
       version: document.lastUpdated,
     });
   });
 
   socket.on("undo", async ({ documentId }) => {
     let document = await Document.findById(documentId);
-    if (!document) return;
+    if (!document || document.history.length === 0) return;
 
-    if (!document.history || document.history.length === 0) return;
-
+    // ✅ Get last operation and reverse it
     const lastOp = document.history.pop();
     const reversedOp = reverseOperation(lastOp);
+
+    // ✅ Apply the reversed operation
     document.content = applyOperation(document.content, reversedOp);
     document.lastUpdated = new Date();
     await document.save();
 
+    // ✅ Broadcast updated content
     collaborationNamespace.to(documentId).emit("document-updated", {
       content: document.content,
       version: document.lastUpdated,
@@ -96,7 +106,7 @@ collaborationNamespace.on("connection", (socket) => {
   });
 });
 
-// Function to Apply Operations (Insert/Delete)
+// ✅ Function to Apply Operations (Insert/Delete)
 function applyOperation(content, operation) {
   if (operation.type === "insert") {
     return content.slice(0, operation.index) + operation.text + content.slice(operation.index);
@@ -107,7 +117,7 @@ function applyOperation(content, operation) {
   return content;
 }
 
-// Function to Reverse Operations for Undo
+// ✅ Function to Reverse Operations for Undo
 function reverseOperation(operation) {
   if (operation.type === "insert") {
     return { type: "delete", index: operation.index, length: operation.text.length };
