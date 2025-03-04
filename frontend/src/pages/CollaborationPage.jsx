@@ -12,13 +12,13 @@ const CollaborationPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [suggestion, setSuggestion] = useState("");
     const [loading, setLoading] = useState(false);
+    const [documentContent, setDocumentContent] = useState(""); 
 
     const handleAISuggestion = async () => {
       setLoading(true);
       try {
-          const documentText = "Fetch actual document content here"; // Replace with Editor state
-          const response = await axios.post("http://localhost:8000/api/ai-suggestion", {
-              documentText,
+          const response = await axios.post("http://localhost:7000/api/ai-suggestion", {
+              documentText:documentContent,
           });
           setSuggestion(response.data.suggestion);
           setShowModal(true);
@@ -28,6 +28,10 @@ const CollaborationPage = () => {
           setLoading(false);
       }
   };
+
+  const handleContentChange = (newContent) => {
+    setDocumentContent(newContent); // Update state when content changes
+};
 
   return (
     <div className="flex">
@@ -41,7 +45,7 @@ const CollaborationPage = () => {
                 >
                     {loading ? "Generating..." : "Get AI Suggestion"}
                 </button>
-        <Editor documentId={documentId} />
+        <Editor documentId={documentId} onContentChange={handleContentChange} />
         {showModal && (
                     <AISuggestionModal 
                         suggestion={suggestion} 

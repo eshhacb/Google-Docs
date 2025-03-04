@@ -10,7 +10,7 @@ console.log("this is api base url ",API_BASE_URL);
 
 const socket = io(API_BASE_URL, { transports: ["websocket"] });
 
-const Editor = ({ documentId }) => {
+const Editor = ({ documentId, onContentChange  }) => {
   const [content, setContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -22,6 +22,7 @@ const Editor = ({ documentId }) => {
 
     const handleDocumentUpdate = (newContent) => {
       setContent(newContent);
+      onContentChange(newContent);
     };
 
     socket.on("document-updated", handleDocumentUpdate);
@@ -31,6 +32,7 @@ const Editor = ({ documentId }) => {
       .then((res) => {
         setContent(res.data.content || "");
         setDocumentTitle(res.data.title || "Untitled Document");
+        onContentChange(res.data.content || "");
       })
       .catch((err) => console.error("Error fetching document:", err));
 
@@ -38,7 +40,7 @@ const Editor = ({ documentId }) => {
       socket.off("document-updated", handleDocumentUpdate);
       socket.emit("leave-document", documentId);
     };
-  }, [documentId]);
+  }, [documentId,onContentChange]);
 
   const emitChange = useCallback(
     debounce((value) => {
@@ -53,6 +55,7 @@ const Editor = ({ documentId }) => {
     setContent(value);
     setIsSaving(true);
     emitChange(value);
+    onContentChange(value); 
   };
 
   return (
