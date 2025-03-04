@@ -4,6 +4,8 @@ import { useParams } from "react-router-dom";
 
 const CollaborationPage = () => {
     const { documentId } = useParams();
+    console.log("this is documentID",documentId);
+    
   return (
     <div className="flex">
       <Sidebar />

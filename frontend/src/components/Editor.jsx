@@ -5,7 +5,9 @@ import "react-quill/dist/quill.snow.css";
 import axios from "axios";
 import { debounce } from "lodash";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = 'http://localhost:8000';
+console.log("this is api base url ",API_BASE_URL);
+
 const socket = io(API_BASE_URL, { transports: ["websocket"] });
 
 const Editor = ({ documentId }) => {
@@ -45,6 +47,7 @@ const Editor = ({ documentId }) => {
     }, 1000),
     [documentId]
   );
+
 
   const handleChange = (value) => {
     setContent(value);
