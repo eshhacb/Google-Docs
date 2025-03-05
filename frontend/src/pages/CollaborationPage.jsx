@@ -33,6 +33,11 @@ const CollaborationPage = () => {
     setDocumentContent(newContent); // Update state when content changes
 };
 
+const applySuggestion = () => {
+  setDocumentContent(suggestion);
+  setShowModal(false);
+};
+
   return (
     <div className="flex">
       <Sidebar />
@@ -45,11 +50,12 @@ const CollaborationPage = () => {
                 >
                     {loading ? "Generating..." : "Get AI Suggestion"}
                 </button>
-        <Editor documentId={documentId} onContentChange={handleContentChange} />
+        <Editor documentId={documentId} externalContent={documentContent} onContentChange={applySuggestion}/>
         {showModal && (
                     <AISuggestionModal 
                         suggestion={suggestion} 
                         onClose={() => setShowModal(false)} 
+                        onAdd={applySuggestion} 
                     />
                 )}
 

@@ -10,7 +10,7 @@ console.log("this is api base url ",API_BASE_URL);
 
 const socket = io(API_BASE_URL, { transports: ["websocket"] });
 
-const Editor = ({ documentId, onContentChange  }) => {
+const Editor = ({ documentId, onContentChange, externalContent  }) => {
   const [content, setContent] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +57,14 @@ const Editor = ({ documentId, onContentChange  }) => {
     emitChange(value);
     onContentChange(value); 
   };
+
+  useEffect(() => {
+    if (externalContent !== undefined && externalContent !== content) {
+      setContent(externalContent);
+      onContentChange(externalContent);
+    }
+  }, [externalContent])
+
 
   return (
     <div className="h-full w-full p-4 border border-gray-300 rounded-md bg-white shadow-md">
